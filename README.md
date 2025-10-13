@@ -22,10 +22,24 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-2) Train the agent in the simulator
+2) Train the agent (RL in simulator) or run the ADB rule/rl modes
 
 ```bash
+# RL training in simulator (produces model for rl mode)
 python -m src.train --total-steps 200000 --save-dir models/cr_agent
+
+# Rule-based play directly in MEmu (no simulator needed)
+"C:\\Program Files\\Microvirt\\MEmu\\adb.exe" connect 127.0.0.1:21503
+python -m src.run_emulator --mode rule --adb-path "C:\\Program Files\\Microvirt\\MEmu\\adb.exe" --serial 127.0.0.1:21503
+
+# RL policy play through ADB (requires trained model)
+python -m src.run_emulator --mode rl --model models/cr_agent/latest.zip --adb-path "C:\\Program Files\\Microvirt\\MEmu\\adb.exe" --serial 127.0.0.1:21503
+
+# RL policy play with hot-reload + logging
+python -m src.run_emulator --mode rl --model models/cr_agent/latest.zip --adb-path "C:\\Program Files\\Microvirt\\MEmu\\adb.exe" --serial 127.0.0.1:21503 --hot-reload --log-dir runs/emu1 --save-frames
+
+# Fine-tune on logged emulator data (behavior cloning)
+python -m src.finetune_bc --model models/cr_agent/latest.zip --logs runs/emu1 --out models/cr_agent/finetuned.zip
 ```
 
 3) Evaluate (optional)
@@ -34,9 +48,9 @@ python -m src.train --total-steps 200000 --save-dir models/cr_agent
 python -m src.train --eval-only --load models/cr_agent/latest.zip
 ```
 
-4) Emulator connector (stub)
+4) Emulator connector and auto-launch
 
-See `src/emulator/connector.py`. It outlines how to:
+`src/run_emulator.py` will check if Clash Royale is running (package `com.supercell.clashroyale`) and auto-launch it via ADB before starting. See `src/emulator/utils.py` for details. The connector outlines how to:
 
 - Capture a frame (e.g., via ADB screencap) and pre-process to the simulator-like observation format
 - Map agent actions (card index + placement) to emulator inputs (e.g., taps/drags)
@@ -64,6 +78,6 @@ python -m src.train --total-steps 20000
 
 Disclaimer
 
-Use the emulator connector only where authorized and compliant with terms of service. This project focuses on autonomous learning in a simulator; any external integration is your responsibility.
+Use the emulator connector only where authorized and compliant with terms of service. This project includes an option to play via ADB (rule or rl mode). Ensure you have permission to automate and that it complies with all terms.
 
 

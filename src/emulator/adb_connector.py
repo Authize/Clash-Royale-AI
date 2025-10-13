@@ -15,13 +15,14 @@ class ADBConnector:
 	Note: Ensure usage complies with app and platform terms.
 	"""
 
-	def __init__(self, serial: Optional[str] = None):
+	def __init__(self, serial: Optional[str] = None, adb_path: str = "adb"):
 
 		self.serial = serial
+		self.adb_path = adb_path
 
 	def _adb(self, *args: str) -> subprocess.CompletedProcess:
 
-		base = ["adb"]
+		base = [self.adb_path]
 		if self.serial:
 			base += ["-s", self.serial]
 		return subprocess.run(base + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
@@ -35,6 +36,26 @@ class ADBConnector:
 		if image is None:
 			raise RuntimeError("Failed to decode screencap")
 		return image
+
+	def get_screen_size(self) -> Tuple[int, int]:
+
+		# Try wm size first
+		try:
+			proc = self._adb("shell", "wm", "size")
+			out = proc.stdout.decode("utf-8", errors="ignore")
+			# Expected: Physical size: 1080x1920
+			for line in out.splitlines():
+				if ":" in line and "x" in line:
+					part = line.split(":", 1)[1].strip()
+					w, h = part.split("x")
+					return int(w), int(h)
+		except Exception:
+			pass
+
+		# Fallback to screencap shape
+		img = self.screencap()
+		h, w = img.shape[:2]
+		return int(w), int(h)
 
 	def tap(self, x: int, y: int) -> None:
 
