@@ -1,1 +1,8 @@
-.venv
+# Environment variables
+.env
+
+# Python
+__pycache__/
+
+.venv/
+.venv312/

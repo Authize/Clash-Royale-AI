@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CRAI Enhanced Overlay</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      html, body { 
+        margin: 0; 
+        padding: 0; 
+        background: transparent; 
+        color: #ffffff; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      
+      .overlay-container {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+      
+      .panel { 
+        background: linear-gradient(135deg, rgba(20, 25, 35, 0.95), rgba(15, 20, 30, 0.95));
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 
+          0 8px 32px rgba(0, 0, 0, 0.3),
+          0 2px 8px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .panel::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #00d4ff, #0099cc, #00d4ff);
+        border-radius: 16px 16px 0 0;
+      }
+      
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #00d4ff;
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+      }
+      
+      .timestamp {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 500;
+      }
+      
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      
+      .metric-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      }
+      
+      .metric-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+      
+      .metric-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      
+      .metric-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        line-height: 1.2;
+      }
+      
+      .metric-icon {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #00d4ff;
+        box-shadow: 0 0 6px rgba(0, 212, 255, 0.5);
+      }
+      
+      .streak-section {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+        position: relative;
+      }
+      
+      .streak-section::before {
+        content: '🏆';
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        font-size: 20px;
+        opacity: 0.6;
+      }
+      
+      .streak-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      
+      .streak-item {
+        text-align: center;
+      }
+      
+      .streak-label {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+      
+      .streak-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #00d4ff;
+        text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+      }
+      
+      .learning-section {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+        position: relative;
+      }
+      
+      .learning-section::before {
+        content: '🧠';
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        font-size: 20px;
+        opacity: 0.6;
+      }
+      
+      .learning-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      
+      .learning-item {
+        text-align: center;
+      }
+      
+      .learning-label {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+      
+      .learning-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: #ffc107;
+        text-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
+      }
+      
+      .chart-container {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+      
+      .chart-title {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        text-align: center;
+      }
+      
+      #spark {
+        display: block;
+        width: 100%;
+        height: 60px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+      
+      /* Status Colors */
+      .ok { 
+        color: #4ade80 !important;
+        text-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+      }
+      .warn { 
+        color: #fbbf24 !important;
+        text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+      }
+      .bad { 
+        color: #f87171 !important;
+        text-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+      }
+      
+      /* Animations */
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+      
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      
+      /* Responsive */
+      @media (max-width: 480px) {
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+        .streak-grid {
+          grid-template-columns: 1fr;
+        }
+        .learning-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="overlay-container">
+      <div class="panel">
+        <!-- Header -->
+        <div class="header">
+          <div class="title">CRAI Enhanced</div>
+          <div id="timestamp" class="timestamp">Loading metrics…</div>
+        </div>
+        
+        <!-- Main Metrics Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">
+              <div class="metric-icon"></div>
+              Episode
+            </div>
+            <div id="ep" class="metric-value">-</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-label">
+              <div class="metric-icon"></div>
+              Epsilon
+            </div>
+            <div id="eps" class="metric-value">-</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-label">
+              <div class="metric-icon"></div>
+              Last Reward
+            </div>
+            <div id="rew" class="metric-value">-</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-label">
+              <div class="metric-icon"></div>
+              Moving Avg
+            </div>
+            <div id="avg" class="metric-value">-</div>
+          </div>
+        </div>
+        
+        <!-- Win Streak Section -->
+        <div class="streak-section">
+          <div class="streak-grid">
+            <div class="streak-item">
+              <div class="streak-label">Current Streak</div>
+              <div id="streak" class="streak-value">-</div>
+            </div>
+            <div class="streak-item">
+              <div class="streak-label">Best Streak</div>
+              <div id="beststreak" class="streak-value">-</div>
+            </div>
+            <div class="streak-item">
+              <div class="streak-label">Win Rate</div>
+              <div id="winrate" class="streak-value">-</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Learning Section -->
+        <div class="learning-section">
+          <div class="learning-grid">
+            <div class="learning-item">
+              <div class="learning-label">Insights</div>
+              <div id="insights" class="learning-value">-</div>
+            </div>
+            <div class="learning-item">
+              <div class="learning-label">Recommendations</div>
+              <div id="recommendations" class="learning-value">-</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Progress Section -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">
+              <div class="metric-icon"></div>
+              Progress
+            </div>
+            <div id="progress" class="metric-value">-</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-label">
+              <div class="metric-icon"></div>
+              AI Status
+            </div>
+            <div id="aistatus" class="metric-value">-</div>
+          </div>
+        </div>
+        
+        <!-- Chart Section -->
+        <div class="chart-container">
+          <div class="chart-title">Performance Trend</div>
+          <canvas id="spark" width="400" height="60"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      async function poll() {
+        try {
+          const res = await fetch(`overlay.json?ts=${Date.now()}`, { cache: 'no-store' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          render(data);
+          $("timestamp").textContent = `Updated ${new Date(data.timestamp || Date.now()).toLocaleTimeString()}`;
+        } catch (e) {
+          $("timestamp").textContent = 'Waiting for data… (run train.py)';
+        }
+      }
+
+      function render(d) {
+        console.log('Rendering data:', d);
+        
+        // Basic fields
+        $("ep").textContent = d.episode || '-';
+        $("eps").textContent = d.epsilon ? Number(d.epsilon).toFixed(3) : '-';
+        $("rew").textContent = d.total_reward ? Number(d.total_reward).toFixed(2) : '-';
+        $("avg").textContent = d.moving_avg_reward ? Number(d.moving_avg_reward).toFixed(2) : '-';
+        
+        // Win streak information
+        $("streak").textContent = d.win_streak !== undefined ? d.win_streak : '-';
+        $("beststreak").textContent = d.best_streak !== undefined ? d.best_streak : '-';
+        $("winrate").textContent = d.win_rate !== undefined ? Number(d.win_rate).toFixed(1) + '%' : '-';
+        
+        // Enhanced learning information
+        $("insights").textContent = d.learning_insights !== undefined ? d.learning_insights : '-';
+        $("recommendations").textContent = d.recommendations_count !== undefined ? d.recommendations_count : '-';
+        
+        // Training Progress - use direct value or calculate
+        let progressText = '0%';
+        if (d.training_progress !== undefined && d.training_progress !== null) {
+          progressText = Math.round(d.training_progress) + '%';
+        } else if (d.episode) {
+          // Calculate progress if not provided
+          const episode = Number(d.episode);
+          const progress = Math.min(100, Math.max(0, episode * 2)); // 2% per episode
+          progressText = progress + '%';
+        }
+        $("progress").textContent = progressText;
+        
+        // AI Status - use direct value or calculate
+        let aiStatusText = 'Learning...';
+        if (d.ai_status) {
+          aiStatusText = d.ai_status;
+        } else if (d.episode) {
+          const episode = Number(d.episode);
+          if (episode < 10) {
+            aiStatusText = 'Learning...';
+          } else if (episode < 50) {
+            aiStatusText = 'Training...';
+          } else {
+            aiStatusText = 'Getting Good!';
+          }
+        }
+        $("aistatus").textContent = aiStatusText;
+        
+        // Apply color coding with enhanced styling
+        setClass($("rew"), Number(d.total_reward));
+        setClass($("avg"), Number(d.moving_avg_reward));
+        setClass($("progress"), Number(d.training_progress) || 0);
+        setClass($("aistatus"), Number(d.training_progress) > 80 ? 10 : 5);
+        
+        // Win streak color coding
+        setClass($("streak"), Number(d.win_streak) || 0);
+        setClass($("beststreak"), Number(d.best_streak) || 0);
+        setClass($("winrate"), Number(d.win_rate) || 0);
+        
+        // Enhanced learning color coding
+        setClass($("insights"), Number(d.learning_insights) || 0);
+        setClass($("recommendations"), Number(d.recommendations_count) || 0);
+
+        // Draw performance chart
+        drawSpark(d.rewards_last100 || []);
+        
+        // Add pulse animation for active learning
+        if (d.learning_insights > 0) {
+          $("insights").classList.add('pulse');
+        } else {
+          $("insights").classList.remove('pulse');
+        }
+      }
+
+      function setClass(el, val) {
+        el.classList.remove('ok','warn','bad');
+        if (isNaN(val)) return;
+        if (val >= 0.0) el.classList.add('ok');
+        else if (val > -2.0) el.classList.add('warn');
+        else el.classList.add('bad');
+      }
+
+      function drawSpark(series) {
+        const c = $("spark");
+        const ctx = c.getContext('2d');
+        ctx.clearRect(0, 0, c.width, c.height);
+
+        if (!series.length) {
+          ctx.fillStyle = 'rgba(255,255,255,0.4)';
+          ctx.font = '12px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('No performance data yet', c.width/2, c.height/2);
+          return;
+        }
+
+        const w = c.width, h = c.height, pad = 8;
+        const min = Math.min(...series);
+        const max = Math.max(...series);
+        const span = (max - min) || 1;
+
+        // Create gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 0, h);
+        gradient.addColorStop(0, 'rgba(0, 212, 255, 0.1)');
+        gradient.addColorStop(1, 'rgba(0, 212, 255, 0.02)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+
+        // Draw area under curve
+        ctx.fillStyle = 'rgba(0, 212, 255, 0.2)';
+        ctx.beginPath();
+        series.forEach((v, i) => {
+          const x = pad + (i * (w - pad*2)) / Math.max(1, series.length - 1);
+          const y = h - pad - ((v - min) * (h - pad*2)) / span;
+          if (i === 0) {
+            ctx.moveTo(x, h - pad);
+            ctx.lineTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.lineTo(pad + ((series.length - 1) * (w - pad*2)) / Math.max(1, series.length - 1), h - pad);
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw main line
+        ctx.strokeStyle = '#00d4ff';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(0, 212, 255, 0.5)';
+        ctx.shadowBlur = 4;
+        ctx.beginPath();
+        series.forEach((v, i) => {
+          const x = pad + (i * (w - pad*2)) / Math.max(1, series.length - 1);
+          const y = h - pad - ((v - min) * (h - pad*2)) / span;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        // Draw zero line
+        const zeroY = h - pad - ((0 - min) * (h - pad*2)) / span;
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(pad, zeroY);
+        ctx.lineTo(w - pad, zeroY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw data points
+        ctx.fillStyle = '#00d4ff';
+        ctx.shadowColor = 'rgba(0, 212, 255, 0.8)';
+        ctx.shadowBlur = 3;
+        series.forEach((v, i) => {
+          const x = pad + (i * (w - pad*2)) / Math.max(1, series.length - 1);
+          const y = h - pad - ((v - min) * (h - pad*2)) / span;
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+      }
+
+      setInterval(poll, 1000);
+      poll();
+    </script>
+  </body>
+</html>
