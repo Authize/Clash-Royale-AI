@@ -58,8 +58,10 @@ class ClashRoyaleEnv:
         if not api_key:
             raise ValueError("ROBOFLOW_API_KEY environment variable is not set. Please check your .env file.")
         
+        # Allow overriding the inference API URL (local server vs hosted)
+        api_url = os.getenv('INFERENCE_API_URL', 'http://localhost:9001').strip()
         return InferenceHTTPClient(
-            api_url="http://localhost:9001",
+            api_url=api_url,
             api_key=api_key
         )
 
@@ -68,8 +70,9 @@ class ClashRoyaleEnv:
         if not api_key:
             raise ValueError("ROBOFLOW_API_KEY environment variable is not set. Please check your .env file.")
         
+        api_url = os.getenv('INFERENCE_API_URL', 'http://localhost:9001').strip()
         return InferenceHTTPClient(
-            api_url="http://localhost:9001",
+            api_url=api_url,
             api_key=api_key
         )
 

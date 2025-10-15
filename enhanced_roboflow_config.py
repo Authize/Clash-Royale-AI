@@ -122,8 +122,9 @@ class EnhancedRoboflowDetector:
     def _setup_client(self, client_type: str) -> InferenceHTTPClient:
         """Setup Roboflow inference client"""
         try:
+            api_url = os.getenv('INFERENCE_API_URL', 'http://localhost:9001').strip()
             return InferenceHTTPClient(
-                api_url="http://localhost:9001",
+                api_url=api_url,
                 api_key=self.api_key
             )
         except Exception as e:
