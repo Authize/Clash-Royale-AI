@@ -278,6 +278,28 @@ def train():
     print("🏁 Training completed!")
 
 if __name__ == "__main__":
+    print("=" * 60)
+    print("🏆 CLASH ROYALE AI - TRAINING MODE")
+    print("=" * 60)
+    print("This will train the AI to play Clash Royale.")
+    print("")
+    print("⚠️  Make sure:")
+    print("  1. Clash Royale is running in an emulator")
+    print("  2. You're on the home screen or ready to battle")
+    print("  3. Roboflow API keys are configured in .env")
+    print("")
+    print("📊 Training will:")
+    print("  - Learn from both wins and losses")
+    print("  - Save best models automatically")
+    print("  - Display progress at http://localhost:8001")
+    print("  - Run continuously until you press 'Q'")
+    print("")
+    print("⏸️  Press CTRL+C or 'Q' to stop training gracefully")
+    print("=" * 60)
+    print("")
+    
+    input("▶️  Press ENTER to start training...")
+    
     # Set seeds for reproducibility where possible
     try:
         seed = int(os.getenv("SEED", "42"))
@@ -286,4 +308,6 @@ if __name__ == "__main__":
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    
+    print("✅ Starting training...\n")
     train()
