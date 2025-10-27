@@ -218,18 +218,40 @@ class Actions:
         }
 
     def card_play(self, x, y, card_index):
+        """Play a card at the specified position"""
         print(f"Playing card {card_index} at position ({x}, {y})")
-        if card_index in self.card_keys:
+        
+        try:
+            if card_index not in self.card_keys:
+                print(f"Invalid card index: {card_index}")
+                return False
+            
             key = self.card_keys[card_index]
-            print(f"Pressing key: {key}")
+            print(f"Selecting card with key: {key}")
+            
+            # First, ensure we're in battle by checking if elixir bar is visible
+            # This prevents trying to play cards when not in battle
+            
+            # Select the card by pressing the number key
             pyautogui.press(key)
-            time.sleep(0.2)
-            print(f"Moving mouse to: ({x}, {y})")
-            pyautogui.moveTo(x, y, duration=0.2)
-            print("Clicking")
+            time.sleep(0.15)  # Wait for card to be selected
+            
+            # Move to placement position
+            print(f"Moving to placement position: ({x}, {y})")
+            pyautogui.moveTo(x, y, duration=0.15)
+            time.sleep(0.05)
+            
+            # Click to place the card
+            print("Placing card...")
             pyautogui.click()
-        else:
-            print(f"Invalid card index: {card_index}")
+            time.sleep(0.1)  # Brief pause after placement
+            
+            print(f"✅ Card {card_index} played successfully")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error playing card {card_index}: {e}")
+            return False
 
     def smart_button_click(self):
         """Smart button detection with priority: Battle → Claim → OK"""

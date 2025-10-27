@@ -26,12 +26,39 @@ def get_latest_model_path(models_dir="models"):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate a saved model (epsilon=0)")
-    parser.add_argument("--model", type=str, default=None, help="Path to model .pth file (defaults to best or latest)")
-    parser.add_argument("--episodes", type=int, default=3, help="Number of evaluation matches")
-    parser.add_argument("--max_steps", type=int, default=2000, help="Max steps per episode")
-    parser.add_argument("--no-overlay", action="store_true", help="Disable automatic overlay server")
+    print("=" * 60)
+    print("🎮 CLASH ROYALE AI - PLAY MODE")
+    print("=" * 60)
+    print("This will use the trained AI to play Clash Royale.")
+    print("")
+    
+    parser = argparse.ArgumentParser(
+        description="Play Clash Royale with trained AI (no exploration)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
+  python play.py                    # Play 3 matches with best model
+  python play.py --episodes 10      # Play 10 matches
+  python play.py --model models/latest_model.pth  # Use specific model
+        """
+    )
+    parser.add_argument("--model", type=str, default=None, 
+                        help="Path to model .pth file (defaults to best or latest)")
+    parser.add_argument("--episodes", type=int, default=3, 
+                        help="Number of matches to play (default: 3)")
+    parser.add_argument("--max_steps", type=int, default=2000, 
+                        help="Max steps per match (default: 2000)")
+    parser.add_argument("--no-overlay", action="store_true", 
+                        help="Disable training overlay dashboard")
+    parser.add_argument("--continuous", action="store_true",
+                        help="Play continuously until interrupted")
     args = parser.parse_args()
+    
+    print(f"⚙️  Configuration:")
+    print(f"  - Matches: {args.episodes if not args.continuous else 'Continuous'}")
+    print(f"  - Model: {args.model if args.model else 'Best available'}")
+    print(f"  - Overlay: {'Disabled' if args.no_overlay else 'Enabled'}")
+    print("=" * 60)
+    print("")
 
     # Start overlay server unless disabled
     overlay_server = None
@@ -80,43 +107,98 @@ def main():
     else:
         print("No saved model found; evaluating with untrained weights.")
 
-    agent.epsilon = 0.0  # greedy policy for evaluation
+    # Set epsilon to 0 for pure exploitation (no exploration)
+    agent.epsilon = 0.0
+    print("🎯 AI set to pure exploitation mode (epsilon=0.0)")
+    print("")
 
     # Track rewards for overlay
     all_rewards = []
+    wins = 0
+    losses = 0
+    draws = 0
     
-    for ep in range(args.episodes):
-        state = env.reset()
-        total_reward = 0.0
-        steps = 0
-        done = False
-        print(f"Evaluation match {ep+1} starting...")
-        while not done and steps < args.max_steps:
-            action = agent.act(state)
-            next_state, reward, done = env.step(action)
-            state = next_state
-            total_reward += reward
-            steps += 1
-            time.sleep(0.1)  # slow down for visibility
-        print(f"Eval {ep+1}: total_reward={total_reward:.2f}, steps={steps}")
-        all_rewards.append(total_reward)
-        
-        # Update overlay data
-        if overlay_server:
-            avg_reward = sum(all_rewards) / len(all_rewards)
-            overlay = {
-                "timestamp": datetime.now().isoformat(),
-                "episode": ep + 1,
-                "epsilon": 0.0,  # Always 0 for evaluation
-                "total_reward": float(total_reward),
-                "moving_avg_reward": float(avg_reward),
-                "rewards_last100": all_rewards[-100:] if len(all_rewards) > 100 else all_rewards,
-            }
-            try:
-                with open("overlay.json", "w") as f:
-                    json.dump(overlay, f)
-            except Exception as e:
-                print(f"Warning: failed to write overlay.json: {e}")
+    # Determine number of episodes
+    episodes = float('inf') if args.continuous else args.episodes
+    ep = 0
+    
+    try:
+        while ep < episodes:
+            ep += 1
+            print(f"🎮 Match {ep}/{args.episodes if not args.continuous else '∞'} starting...")
+            
+            state = env.reset()
+            total_reward = 0.0
+            steps = 0
+            done = False
+            
+            while not done and steps < args.max_steps:
+                action = agent.act(state)
+                next_state, reward, done = env.step(action)
+                state = next_state
+                total_reward += reward
+                steps += 1
+                time.sleep(0.1)  # slow down for visibility
+            
+            # Determine outcome
+            if total_reward > 50:
+                outcome = "victory"
+                wins += 1
+                print(f"✅ Match {ep}: VICTORY! Reward: {total_reward:.2f}, Steps: {steps}")
+            elif total_reward < -50:
+                outcome = "defeat"
+                losses += 1
+                print(f"❌ Match {ep}: DEFEAT! Reward: {total_reward:.2f}, Steps: {steps}")
+            else:
+                outcome = "draw"
+                draws += 1
+                print(f"🤝 Match {ep}: DRAW! Reward: {total_reward:.2f}, Steps: {steps}")
+            
+            all_rewards.append(total_reward)
+            
+            # Print current statistics
+            print(f"📊 Current Stats: W:{wins} L:{losses} D:{draws} | Avg Reward: {sum(all_rewards)/len(all_rewards):.2f}")
+            print("")
+            
+            # Update overlay data
+            if overlay_server:
+                avg_reward = sum(all_rewards) / len(all_rewards)
+                win_rate = (wins / len(all_rewards)) * 100 if len(all_rewards) > 0 else 0
+                overlay = {
+                    "timestamp": datetime.now().isoformat(),
+                    "episode": ep,
+                    "epsilon": 0.0,  # Always 0 for play mode
+                    "total_reward": float(total_reward),
+                    "moving_avg_reward": float(avg_reward),
+                    "rewards_last100": all_rewards[-100:] if len(all_rewards) > 100 else all_rewards,
+                    "mode": "PLAY",
+                    "wins": wins,
+                    "losses": losses,
+                    "draws": draws,
+                    "win_rate": win_rate,
+                }
+                try:
+                    with open("overlay.json", "w") as f:
+                        json.dump(overlay, f)
+                except Exception as e:
+                    print(f"Warning: failed to write overlay.json: {e}")
+                    
+    except KeyboardInterrupt:
+        print("\n⏸️  Play interrupted by user")
+    
+    # Print final statistics
+    print("\n" + "=" * 60)
+    print("🏁 FINAL RESULTS")
+    print("=" * 60)
+    print(f"Total Matches: {len(all_rewards)}")
+    print(f"Wins: {wins}")
+    print(f"Losses: {losses}")
+    print(f"Draws: {draws}")
+    if len(all_rewards) > 0:
+        win_rate = (wins / len(all_rewards)) * 100
+        print(f"Win Rate: {win_rate:.1f}%")
+        print(f"Average Reward: {sum(all_rewards)/len(all_rewards):.2f}")
+    print("=" * 60)
 
     # Cleanup
     env.close()

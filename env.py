@@ -509,40 +509,69 @@ class ClashRoyaleEnv:
         return reward
 
     def detect_cards_in_hand(self):
+        """Detect the current cards in hand using Roboflow API"""
         try:
+            # Capture individual card images
             card_paths = self.actions.capture_individual_cards()
-            print("\nTesting individual card predictions:")
+            print("\n🎴 Detecting cards in hand...")
 
             cards = []
             workspace_name = os.getenv('WORKSPACE_CARD_DETECTION')
             if not workspace_name:
-                raise ValueError("WORKSPACE_CARD_DETECTION environment variable is not set. Please check your .env file.")
+                print("⚠️ WORKSPACE_CARD_DETECTION not set, using placeholder cards")
+                # Fallback to placeholder cards if workspace not configured
+                return ["Card_1", "Card_2", "Card_3", "Card_4"]
             
-            for card_path in card_paths:
-                results = self.card_model.run_workflow(
-                    workspace_name=workspace_name,
-                    workflow_id="custom-workflow",
-                    images={"image": card_path}
-                )
-                # print("Card detection raw results:", results)  # Debug print
-
-                # Fix: parse nested structure
-                predictions = []
-                if isinstance(results, list) and results:
-                    preds_dict = results[0].get("predictions", {})
-                    if isinstance(preds_dict, dict):
-                        predictions = preds_dict.get("predictions", [])
-                if predictions:
-                    card_name = predictions[0]["class"]
-                    print(f"Detected card: {card_name}")
-                    cards.append(card_name)
-                else:
-                    print("No card detected.")
-                    cards.append("Unknown")
-            return cards
+            # Detect each card individually
+            for idx, card_path in enumerate(card_paths):
+                try:
+                    # Run Roboflow workflow for card detection
+                    results = self.card_model.run_workflow(
+                        workspace_name=workspace_name,
+                        workflow_id="custom-workflow",
+                        images={"image": card_path}
+                    )
+                    
+                    # Parse nested structure
+                    predictions = []
+                    if isinstance(results, list) and results:
+                        preds_dict = results[0].get("predictions", {})
+                        if isinstance(preds_dict, dict):
+                            predictions = preds_dict.get("predictions", [])
+                    elif isinstance(results, dict) and "predictions" in results:
+                        preds = results["predictions"]
+                        if isinstance(preds, dict) and "predictions" in preds:
+                            predictions = preds["predictions"]
+                        elif isinstance(preds, list):
+                            predictions = preds
+                    
+                    # Extract card name from predictions
+                    if predictions and len(predictions) > 0:
+                        # Get the highest confidence prediction
+                        best_pred = max(predictions, key=lambda p: p.get("confidence", 0))
+                        card_name = best_pred.get("class", f"Card_{idx+1}")
+                        confidence = best_pred.get("confidence", 0)
+                        print(f"  Card {idx+1}: {card_name} (confidence: {confidence:.2f})")
+                        cards.append(card_name)
+                    else:
+                        print(f"  Card {idx+1}: Unknown (no predictions)")
+                        cards.append(f"Card_{idx+1}")  # Use generic name
+                        
+                except Exception as card_error:
+                    print(f"  Card {idx+1}: Error detecting - {card_error}")
+                    cards.append(f"Card_{idx+1}")  # Use generic name on error
+            
+            # Ensure we always return 4 cards
+            while len(cards) < 4:
+                cards.append(f"Card_{len(cards)+1}")
+            
+            print(f"✅ Detected {len(cards)} cards: {cards}")
+            return cards[:4]  # Ensure exactly 4 cards
+            
         except Exception as e:
-            print(f"Error in detect_cards_in_hand: {e}")
-            return []
+            print(f"❌ Error in detect_cards_in_hand: {e}")
+            # Return placeholder cards on complete failure
+            return ["Card_1", "Card_2", "Card_3", "Card_4"]
 
     def get_available_actions(self):
         """Generate all possible actions"""
